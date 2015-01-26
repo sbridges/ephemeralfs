@@ -42,7 +42,6 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -100,7 +99,8 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
             .compile("name=([^&=]+)");
 
     // maps memory file system name of EphemeralFileSystem
-    private static final ConcurrentHashMap<String, EphemeralFsFileSystem> fileSystems = new ConcurrentHashMap<String, EphemeralFsFileSystem>();
+    private static final ConcurrentHashMap<String, EphemeralFsFileSystem> fileSystems 
+        = new ConcurrentHashMap<String, EphemeralFsFileSystem>();
 
     public EphemeralFsFileSystemProvider() {
 
