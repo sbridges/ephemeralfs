@@ -181,13 +181,7 @@ public class WatchServiceTest {
             TestUtil.deleteTempDirRecursive(dir);
             Files.createDirectories(dir);
             
-            Thread.sleep(500);
-            
-            //a new directory exists
-            //with the same path, but the
-            //watch is registered on the inode
-            //so we can't reset the watch key
-            assertFalse(key.reset());
+            assertKeyDoesNotReset(key);
         }
         
     }
@@ -492,13 +486,7 @@ public class WatchServiceTest {
             key.pollEvents();
             
             TestUtil.deleteTempDirRecursive(child);
-            Thread.sleep(500);
-            
-            key.pollEvents();
-            
-            //dir no longer exists
-            //we can't reset it
-            assertFalse(key.reset());
+            assertKeyDoesNotReset(key);
         }
         
     }
@@ -520,13 +508,8 @@ public class WatchServiceTest {
             
             TestUtil.deleteTempDirRecursive(child);
             Files.createFile(child);
-            Thread.sleep(500);
             
-            key.pollEvents();
-            
-            //dir no longer exists
-            //we can't reset it
-            assertFalse(key.reset());
+            assertKeyDoesNotReset(key);
         }
         
     }
@@ -548,13 +531,7 @@ public class WatchServiceTest {
             
             TestUtil.deleteTempDirRecursive(child);
             Files.createDirectories(child);
-            Thread.sleep(500);
-            
-            key.pollEvents();
-            
-            //dir no longer exists
-            //we can't reset it
-            assertFalse(key.reset());
+            assertKeyDoesNotReset(key);
         }
         
     }
@@ -693,9 +670,18 @@ public class WatchServiceTest {
             assertNotNull(key);
             
             TestUtil.deleteTempDirRecursive(child);
-            Thread.sleep(500);
-            
-            assertFalse(key.reset());
+            assertKeyDoesNotReset(key);
         }
+    }
+
+    private void assertKeyDoesNotReset(WatchKey key) throws InterruptedException {
+        key.pollEvents();
+        for(int i =0; i < 100; i++) {
+            Thread.sleep(100);
+            if(!key.reset()) {
+                return;
+            }    
+        }
+        fail("key did not reset");
     }
 }
