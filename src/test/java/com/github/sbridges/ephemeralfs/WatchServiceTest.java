@@ -107,7 +107,7 @@ public class WatchServiceTest {
             
             Files.createFile(root.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
@@ -122,7 +122,7 @@ public class WatchServiceTest {
             assertTrue(key.reset());
         }
     }
-    
+
     @IgnoreIf(FsType.WINDOWS)
     @Test
     public void testHardLinks() throws IOException, Exception {
@@ -169,7 +169,7 @@ public class WatchServiceTest {
             
             Files.createFile(dir.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
@@ -211,7 +211,7 @@ public class WatchServiceTest {
             
             Files.createFile(dir2.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
@@ -226,7 +226,7 @@ public class WatchServiceTest {
             
             Files.createFile(dir2.resolve("test2"));
             
-            key = service.poll(1, TimeUnit.SECONDS);
+            key = poll(service);
             assertNotNull(key);
         }
         
@@ -245,14 +245,14 @@ public class WatchServiceTest {
             Files.write(test, new byte[] {5});
             
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
             
             assertEquals(1, events.size());
             //different for windows and linux
-            assertTrue(events.get(0).count() >= 2);
+            assertTrue(events.get(0).count() >= 1);
             assertEquals(StandardWatchEventKinds.ENTRY_MODIFY, events.get(0).kind());
             assertEquals(root.resolve("test").getFileName(), events.get(0).context());
             
@@ -287,7 +287,7 @@ public class WatchServiceTest {
             Files.write(test, new byte[] {5});
             
             
-            WatchKey key1 = d1Service.poll(1, TimeUnit.SECONDS);
+            WatchKey key1 = poll(d1Service);
             assertNotNull(key1);
             
             //we are modifying a file with two parents, but only
@@ -301,7 +301,7 @@ public class WatchServiceTest {
             assertEquals(1, events1.size());
             //2 entries, 1 for meta data, 1 for contents?
             //different for windows and linux
-            assertTrue(events1.get(0).count() >= 2);
+            assertTrue(events1.get(0).count() >= 1);
             assertEquals(StandardWatchEventKinds.ENTRY_MODIFY, events1.get(0).kind());
             assertEquals(root.resolve("test").getFileName(), events1.get(0).context());
         }
@@ -320,7 +320,7 @@ public class WatchServiceTest {
             Files.write(test, new byte[] {6});
             
 
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
@@ -329,7 +329,7 @@ public class WatchServiceTest {
             
             assertEquals(1, events.size());
             //more than 1 count, meta data and contents, this differs on windows/linux
-            assertTrue(events.get(0).count() > 1);
+            assertTrue(events.get(0).count() >= 1);
             assertEquals(StandardWatchEventKinds.ENTRY_MODIFY, events.get(0).kind());
             assertEquals(root.resolve("test").getFileName(), events.get(0).context());
             
@@ -354,7 +354,7 @@ public class WatchServiceTest {
                 
                 out.write(new byte[] {6});
                 
-                WatchKey key = service.poll(1, TimeUnit.SECONDS);
+                WatchKey key = poll(service);
                 assertNotNull(key);
                 
                 List<WatchEvent<?>> events = key.pollEvents();
@@ -389,7 +389,7 @@ public class WatchServiceTest {
                 
                 out.write(new byte[] {6});
                 
-                WatchKey key = service.poll(1, TimeUnit.SECONDS);
+                WatchKey key = poll(service);
                 assertNotNull(key);
                 
                 List<WatchEvent<?>> events = key.pollEvents();
@@ -422,7 +422,7 @@ public class WatchServiceTest {
             Files.write(test, new byte[] {7});
             
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
@@ -430,7 +430,7 @@ public class WatchServiceTest {
             assertEquals(1, events.size());
             //2 entries, 1 for meta data, 1 for contents?
             //the actual number is different on windows and linux
-            assertTrue(events.get(0).count() >= 4);
+            assertTrue(events.get(0).count() >= 1);
             assertEquals(StandardWatchEventKinds.ENTRY_MODIFY, events.get(0).kind());
             assertEquals(root.resolve("test").getFileName(), events.get(0).context());
             
@@ -453,7 +453,7 @@ public class WatchServiceTest {
             Files.setLastModifiedTime(test, FileTime.fromMillis(System.currentTimeMillis() - 10000));
             
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             List<WatchEvent<?>> events = key.pollEvents();
@@ -481,7 +481,7 @@ public class WatchServiceTest {
             
             Files.createFile(child.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             key.pollEvents();
             
@@ -502,7 +502,7 @@ public class WatchServiceTest {
             
             Files.createFile(child.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             key.pollEvents();
             
@@ -525,7 +525,7 @@ public class WatchServiceTest {
             
             Files.createFile(child.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             key.pollEvents();
             
@@ -543,7 +543,7 @@ public class WatchServiceTest {
             
             Files.createFile(root.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             key.cancel();
             
@@ -569,7 +569,7 @@ public class WatchServiceTest {
             
             Files.createFile(root.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             Files.createFile(root.resolve("test2"));
@@ -600,7 +600,7 @@ public class WatchServiceTest {
             
             Files.createFile(root.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             assertEquals(1, key.pollEvents().size());
@@ -634,7 +634,7 @@ public class WatchServiceTest {
             
             Files.createFile(root.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             for(int i =0; i < 100l; i++) {
@@ -646,7 +646,7 @@ public class WatchServiceTest {
             //this seems like a bug, but thats the way it works
             WatchKey last = null;
             for(int i =0; i < 100l; i++) {
-                WatchKey current = service.poll(1, TimeUnit.SECONDS);
+                WatchKey current = poll(service);
                 assertNotNull(current);
                 if(last != null) {
                     assertEquals(last, current);
@@ -666,7 +666,7 @@ public class WatchServiceTest {
             
             Files.createFile(child.resolve("test"));
             
-            WatchKey key = service.poll(1, TimeUnit.SECONDS);
+            WatchKey key = poll(service);
             assertNotNull(key);
             
             TestUtil.deleteTempDirRecursive(child);
@@ -674,10 +674,14 @@ public class WatchServiceTest {
         }
     }
 
+    private WatchKey poll(WatchService service) throws InterruptedException {
+        return service.poll(10, TimeUnit.SECONDS);
+    }
+    
     private void assertKeyDoesNotReset(WatchKey key) throws InterruptedException {
         key.pollEvents();
-        for(int i =0; i < 100; i++) {
-            Thread.sleep(100);
+        for(int i =0; i < 200; i++) {
+            Thread.sleep(200);
             if(!key.reset()) {
                 return;
             }    
