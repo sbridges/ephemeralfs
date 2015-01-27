@@ -3,4 +3,4 @@ jdk:
   - oraclejdk8
   - oraclejdk7
 
-install: mvn install -Dmaven.javadoc.skip=true -Ptravis-ci -B -V
+script : mvn test -Ptravis-ci -B -V
