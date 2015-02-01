@@ -81,6 +81,34 @@ public class FileLockTest {
     }
     
     @Test
+    public void testFileLockNotReadable() throws Exception {
+        Path file = root.resolve("locked");
+        Files.createFile(file);
+        
+        FileChannel channel = (FileChannel) 
+                Files.newByteChannel(file, StandardOpenOption.WRITE);
+        try
+        {
+            FileLock lock = channel.tryLock();
+            assertNotNull(lock);
+            assertFalse(lock.isShared());
+            assertTrue(lock.isValid());
+            
+            lock.release();
+            assertFalse(lock.isValid());
+            
+            lock = channel.tryLock();
+            assertNotNull(lock);
+            assertFalse(lock.isShared());
+            assertTrue(lock.isValid());
+            
+            
+        } finally {
+            channel.close();
+        }
+    }
+    
+    @Test
     public void testLockShared() throws Exception {
         Path file = root.resolve("locked");
         Files.createFile(file);

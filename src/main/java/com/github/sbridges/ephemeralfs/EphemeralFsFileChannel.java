@@ -353,7 +353,6 @@ class EphemeralFsFileChannel extends FileChannel {
             throws IOException {
         synchronized(fc.lock) {
             assertNotClosed(); 
-            assertReadable();
             assertWritable();
             return fc.tryLock(this, position, size, shared);
         }
