@@ -95,8 +95,12 @@ class EphemeralFsFileChannel extends FileChannel {
                     );
             fc.getContents().position(position);
             fc.getContents().limit(position + toRead);
-            dst.put(fc.getContents());
-            position += toRead;
+            try {
+                dst.put(fc.getContents());
+                position += toRead;
+            } finally {
+                fc.getContents().limit(fc.getContents().capacity());
+            }
             return toRead;
         }
     }
@@ -127,11 +131,15 @@ class EphemeralFsFileChannel extends FileChannel {
             ensureCapacity(position + (long) src.remaining());
             
             int toWrite = src.remaining();
-            fc.getContents().position(position);
             int newPosition = position + toWrite;
-            fc.setSize(Math.max(fc.getSize(), newPosition));
-            //reset limit
-            fc.getContents().limit(fc.getContents().capacity());
+            fc.getContents().position(position);
+            try {
+                fc.getContents().limit(fc.getContents().capacity());
+                fc.setSize(Math.max(fc.getSize(), newPosition));
+                //reset limit
+            } finally {
+                fc.getContents().limit(fc.getContents().capacity());
+            }
             fc.getContents().put(src);
             position = newPosition;
             //don't just use positions, as
