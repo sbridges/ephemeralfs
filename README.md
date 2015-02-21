@@ -8,6 +8,20 @@ EphemeralFs tries to mimic the behaviour of java.nio.FileSystem for Windows, OS-
 EphemeralFsFileSystemChecker allows asserting that all resources are closed, and that all file contents have been properly fsynced. 
 
 
+Getting Started
+===============
+
+EphemeralFs is available in maven as com.github.sbridges:ephemeralfs:1.0.0.0 :
+
+
+```java
+	<dependency>
+	    <groupId>com.github.sbridges</groupId>
+	    <artifactId>ephemeralfs</artifactId>
+	    <version>1.0.0.0</version>
+	</dependency>
+```
+
 Example
 =======
 
