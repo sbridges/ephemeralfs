@@ -14,7 +14,7 @@ Getting Started
 EphemeralFs is available in maven as com.github.sbridges:ephemeralfs:1.0.0.0 :
 
 
-```java
+```xml
 	<dependency>
 	    <groupId>com.github.sbridges</groupId>
 	    <artifactId>ephemeralfs</artifactId>
