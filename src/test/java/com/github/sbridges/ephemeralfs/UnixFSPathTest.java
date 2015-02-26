@@ -145,6 +145,41 @@ public class UnixFSPathTest {
         Path empty = toPath("");
         assertEquals(1, empty.getNameCount());
         assertFalse(empty.isAbsolute());
+        assertTrue(empty.iterator().hasNext());
+        try {
+            empty.subpath(0, 0);
+            fail();
+        } catch(IllegalArgumentException e) {
+            //pass
+        }
+    }
+    
+    @Test
+    public void testSingleSubpath() throws Exception {
+        Path single = toPath("a");
+        assertEquals(1, single.getNameCount());
+        assertFalse(single.isAbsolute());
+        assertTrue(single.iterator().hasNext());
+        try {
+            single.subpath(0, 0);
+            fail();
+        } catch(IllegalArgumentException e) {
+            //pass
+        }
+    }
+    
+    @Test
+    public void testSlashSubpath() throws Exception {
+        Path single = toPath("/");
+        assertEquals(0, single.getNameCount());
+        assertTrue(single.isAbsolute());
+        assertFalse(single.iterator().hasNext());
+        try {
+            single.subpath(0, 0);
+            fail();
+        } catch(IllegalArgumentException e) {
+            //pass
+        }
     }
     
     @Test
@@ -366,6 +401,7 @@ public class UnixFSPathTest {
         assertTrue(path.endsWith(toPath("c")));
         
         assertFalse(path.endsWith(toPath("d")));
+        assertFalse(path.endsWith(toPath("/")));
     }
     
     @Test

@@ -336,7 +336,8 @@ class INode {
                     fs
                     );
         }
-        boolean writeable = options.contains(StandardOpenOption.WRITE);
+        boolean writeable = options.contains(StandardOpenOption.WRITE) ||
+                            options.contains(StandardOpenOption.APPEND);
         boolean readable = options.contains(StandardOpenOption.READ) || 
                            !writeable;  
         

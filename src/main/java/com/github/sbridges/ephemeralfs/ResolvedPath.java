@@ -30,6 +30,7 @@
 package com.github.sbridges.ephemeralfs;
 
 import java.nio.file.FileSystemException;
+import java.nio.file.FileSystemLoopException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.AbstractList;
@@ -98,7 +99,7 @@ class ResolvedPath {
             return resolveAbsolutePath(path, path.getFileSystem(), path.getFileSystem().getRoot(), parts, steps, noFollowLastSymlink);
         } catch(StackOverflowError e) {
             //recursive links
-            throw new FileSystemException(path +  ": Too many levels of symbolic links");
+            throw new FileSystemLoopException(path +  ": Too many levels of symbolic links");
         }
     }
 

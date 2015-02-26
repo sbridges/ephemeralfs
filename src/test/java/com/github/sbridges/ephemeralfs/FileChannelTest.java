@@ -29,6 +29,7 @@
 
 package com.github.sbridges.ephemeralfs;
 
+import static java.nio.file.StandardOpenOption.READ;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
@@ -146,6 +147,7 @@ public class FileChannelTest {
         assertFalse(Files.exists(testFile));
     }
     
+    
     @Test
     public void testReadWrite() throws Exception {
         Path testFile = root.resolve("test");
@@ -163,6 +165,40 @@ public class FileChannelTest {
             
             assertEquals(-1, channel.read(ByteBuffer.allocateDirect(512)));
         }
+    }
+    
+    @Test
+    public void testReadWriteAppend() throws Exception {
+        Path testFile = root.resolve("test");
+        Files.createFile(testFile);
+        try(FileChannel channel = FileChannel.open(testFile, StandardOpenOption.APPEND)) {
+            ByteBuffer buf = ByteBuffer.wrap("test".getBytes());
+            channel.write(buf);
+        }
+        
+        try(FileChannel channel = FileChannel.open(testFile, StandardOpenOption.READ)) {
+            ByteBuffer buf = ByteBuffer.allocate(512);
+            assertEquals(4, channel.read(buf));
+            buf.flip();
+            assertEquals("test", TestUtil.toString(buf));
+            
+            
+            assertEquals(-1, channel.read(ByteBuffer.allocateDirect(512)));
+        }
+    }
+    
+    @Test
+    public void testAppend() throws Exception {
+        Path testFile = root.resolve("test");
+        Files.write(testFile, "hello".getBytes());
+        
+        try(FileChannel channel = FileChannel.open(testFile, StandardOpenOption.APPEND)) {
+            ByteBuffer buf = ByteBuffer.wrap(" world".getBytes());
+            channel.write(buf);
+        }
+        
+        
+        assertEquals("hello world", new String(Files.readAllBytes(testFile)));
     }
 
     @Test
@@ -568,4 +604,32 @@ public class FileChannelTest {
         Files.createDirectories(dir);
         Files.newDirectoryStream(dir).close();
     }
+    
+    @Test
+    public void testScatteringReads() throws Exception {
+        Path path = root.resolve("file");
+        Files.createFile(path);
+        Files.write(path, "abcd".getBytes());
+
+        byte[] a = new byte[1];
+        byte[] b = new byte[1];
+        byte[] c = new byte[1];
+        byte[] d = new byte[1];
+
+        try(FileChannel channel = FileChannel.open(path, READ)) {
+            ByteBuffer[] buffers = new ByteBuffer[] { 
+                    ByteBuffer.wrap(a),
+                    ByteBuffer.wrap(b),
+                    ByteBuffer.wrap(c),
+                    ByteBuffer.wrap(d) };
+            long read = channel.read(buffers);
+            assertEquals("bytes read", 4L, read);
+        }
+
+        assertArrayEquals(new byte[] { 'a' }, a);
+        assertArrayEquals(new byte[] { 'b' }, b);
+        assertArrayEquals(new byte[] { 'c' }, c);
+        assertArrayEquals(new byte[] { 'd' }, d);
+    }
+    
 }

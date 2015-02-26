@@ -371,6 +371,7 @@ class EphemeralFsFileSystem extends FileSystem {
     
     void createDirectory(EphemeralFsPath dir, FileAttribute<?>... attrs)
             throws IOException {
+        dir = dir.toAbsolutePath();
         synchronized(fsLock) {
             //this is root
             if(dir.getParent() == null) {
@@ -455,12 +456,19 @@ class EphemeralFsFileSystem extends FileSystem {
             }
         }
         
+        if(isSameFile(source, target)) {
+            return;
+        }
+        
         synchronized(fsLock) {
             ResolvedPath sourceResolved = ResolvedPath.resolve(source, true);
             ResolvedPath targetResolved = ResolvedPath.resolve(target);
 
             if(!sourceResolved.hasTarget() && !sourceResolved.resolvedToSymbolicLink()) {
                 throw new NoSuchFileException(source.toString());
+            }
+            if(sourceResolved.hasTarget() && sourceResolved.getTarget() == root) {
+                throw new IOException("cant move root");
             }
             if(!targetResolved.hasValidParent()) {
                 throw new NoSuchFileException(target.toString());
@@ -494,6 +502,7 @@ class EphemeralFsFileSystem extends FileSystem {
     
 
     public void copy(EphemeralFsPath source, EphemeralFsPath target, CopyOption... options) throws IOException {
+        
         boolean noFollowLinks = false;
         EnumSet<StandardCopyOption> optionsSet = EnumSet.noneOf(StandardCopyOption.class);
         if(options != null) {
@@ -518,6 +527,10 @@ class EphemeralFsFileSystem extends FileSystem {
             if(resolvedSource.hasTarget() && resolvedTarget.hasTarget() &&
                resolvedSource.getTarget() == resolvedTarget.getTarget()) {
                 return;
+            }
+
+            if(resolvedSource.hasTarget() && resolvedSource.getTarget() == root) {
+                throw new IOException("can't copy root");
             }
             
             if(!resolvedSource.didResolve()) {

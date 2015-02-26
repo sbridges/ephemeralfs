@@ -115,7 +115,7 @@ class EphemeralFsAsynchronousFileChannel extends AsynchronousFileChannel {
         return submit(new Callable<FileLock>() {
             @Override
             public FileLock call() throws Exception {
-                return channel.lock(position, size, shared);
+                return channel.tryLock(EphemeralFsAsynchronousFileChannel.this, position, size, shared);
             }
         });
     }
@@ -123,7 +123,7 @@ class EphemeralFsAsynchronousFileChannel extends AsynchronousFileChannel {
     @Override
     public FileLock tryLock(long position, long size, boolean shared)
             throws IOException {
-        return channel.tryLock(position, size, shared);
+        return channel.tryLock(this, position, size, shared);
     }
 
     @Override

@@ -66,6 +66,20 @@ public class MoveTest {
     }
     
     @Test
+    public void testMoveFileToSelf() throws Exception {
+        Path source = Files.createFile(root.resolve("source"));
+        Files.move(source, source);
+        assertTrue(Files.exists(source));
+    }
+    
+    @Test
+    public void testMoveDirToSelf() throws Exception {
+        Path source = Files.createDirectories(root.resolve("source"));
+        Files.move(source, source);
+        assertTrue(Files.exists(source));
+    }
+    
+    @Test
     public void testMoveDoesntModifyFileTimes() throws Exception {
         
         

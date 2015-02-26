@@ -29,8 +29,10 @@
 
 package com.github.sbridges.ephemeralfs;
 
+import static java.nio.file.StandardOpenOption.*;
 import static org.junit.Assert.*;
 
+import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -38,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Random;
+import java.util.concurrent.Future;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -232,6 +235,51 @@ public class FileLockTest {
         }
         
         assertFalse(lock.isValid());
+    }
+    
+    @Test
+    public void testLockAcquiredBy() throws Exception {
+        Path path = root.resolve("locked");
+        try(FileChannel channel = FileChannel.open(
+                path, WRITE, CREATE_NEW)) {
+            FileLock lock = channel.lock();
+            assertSame(channel, lock.acquiredBy());
+            assertSame(channel, lock.channel());
+        }
+    }
+    
+    @Test
+    public void testTryLockAcquiredBy() throws Exception {
+        Path path = root.resolve("locked");
+        try(FileChannel channel = FileChannel.open(
+                path, WRITE, CREATE_NEW)) {
+            FileLock lock = channel.tryLock();
+            assertSame(channel, lock.acquiredBy());
+            assertSame(channel, lock.channel());
+        }
+    }
+    
+    @Test
+    public void testAsyncLockAcquiredBy() throws Exception {
+        Path path = root.resolve("locked");
+        try(AsynchronousFileChannel channel = AsynchronousFileChannel.open(
+                path, WRITE, CREATE_NEW)) {
+            Future<FileLock> lockFuture = channel.lock();
+            FileLock lock = lockFuture.get();
+            assertSame(channel, lock.acquiredBy());
+            assertNull(lock.channel());
+        }
+    }
+    
+    @Test
+    public void testAsyncTryLockAcquiredBy() throws Exception {
+        Path path = root.resolve("locked");
+        try(AsynchronousFileChannel channel = AsynchronousFileChannel.open(
+                path, WRITE, CREATE_NEW)) {
+            FileLock lock = channel.tryLock();
+            assertSame(channel, lock.acquiredBy());
+            assertNull(lock.channel());
+        }
     }
 
 }

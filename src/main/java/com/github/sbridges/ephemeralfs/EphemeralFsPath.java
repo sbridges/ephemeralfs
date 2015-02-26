@@ -183,6 +183,12 @@ class EphemeralFsPath implements Path {
         List<String> parts = split();
         try
         {
+            if(beginIndex >= parts.size()) {
+                throw new IllegalArgumentException("beginIndex:" + beginIndex + " >=" + parts.size());
+            }
+            if (beginIndex >= endIndex) {
+                throw new IllegalArgumentException("beginIndex:" + beginIndex + " >=" + endIndex);
+            }
             return newPath(join(fs, null, parts.subList(beginIndex, endIndex)));
         } catch(IndexOutOfBoundsException e) {
             //let lists.subList do the bound checking for us, 
@@ -195,7 +201,7 @@ class EphemeralFsPath implements Path {
         if(other.getFileSystem() != getFileSystem()) {
             return false;
         }
-        EphemeralFsPath otherFs = toefsPath(other);
+        EphemeralFsPath otherFs = toEfsPath(other);
         if(this.isAbsolute() != other.isAbsolute()) { 
             return false;
         }
@@ -225,17 +231,18 @@ class EphemeralFsPath implements Path {
         if(other.getFileSystem() != getFileSystem()) {
             return false;
         }
-        EphemeralFsPath otherFs = toefsPath(other);
+        EphemeralFsPath otherFs = toEfsPath(other);
         
         List<String> thisParts = this.split();
         List<String> otherParts = otherFs.split();
 
         
-        if(otherParts.size() > thisParts.size()) {
-            return false;
-        }
+
         if(otherFs.isAbsolute()) { 
             if(!isAbsolute()) {
+                return false;
+            }
+            if(otherParts.size() != thisParts.size()) {
                 return false;
             }
             for(int i =0; i < otherParts.size(); i++) {
@@ -244,6 +251,9 @@ class EphemeralFsPath implements Path {
                 }
             }
         } else {
+            if(otherParts.size() > thisParts.size()) {
+                return false;
+            }
             int offset = thisParts.size() - otherParts.size();
             for(int i =0; i < otherParts.size(); i++) {
                 if(!areEqual(otherParts.get(i), thisParts.get(i + offset))) {
@@ -272,7 +282,7 @@ class EphemeralFsPath implements Path {
                 continue;
             }
             if(s.equals("..")) {
-                if(!normalizedParts.isEmpty()) {
+                if(!normalizedParts.isEmpty() && !normalizedParts.get(normalizedParts.size() - 1).equals("..")) {
                     normalizedParts.remove(normalizedParts.size() - 1);    
                 } else {
                     if(!isAbsolute()) {
@@ -292,7 +302,7 @@ class EphemeralFsPath implements Path {
     
     @Override
     public EphemeralFsPath resolve(Path other) {
-        EphemeralFsPath otherFs = toefsPath(other);
+        EphemeralFsPath otherFs = toEfsPath(other);
         
         if(otherFs.isAbsolute()) {
             return otherFs;
@@ -321,7 +331,7 @@ class EphemeralFsPath implements Path {
     @Override
     public EphemeralFsPath resolveSibling(Path other) {
         //check that other is of the right fs
-        toefsPath(other);
+        toEfsPath(other);
         if(getParent() == null) {
             return (EphemeralFsPath) other;
         }
@@ -339,7 +349,7 @@ class EphemeralFsPath implements Path {
 
     @Override
     public EphemeralFsPath relativize(Path other) {
-        EphemeralFsPath otherFs = toefsPath(other);
+        EphemeralFsPath otherFs = toEfsPath(other);
         if(otherFs.equals(this)) { 
             return newPath("");
         }
@@ -399,7 +409,7 @@ class EphemeralFsPath implements Path {
         if(isAbsolute()) {
             return this;
         }
-        return getRoot().resolve(this);
+        return fs.getRootPath().resolve(this);
     }
     @Override
     public EphemeralFsPath toRealPath(LinkOption... options) throws IOException {
@@ -535,7 +545,7 @@ class EphemeralFsPath implements Path {
         return new FileName(getFileName().toString().toLowerCase(Locale.ENGLISH), fileName);
     }
     
-    private EphemeralFsPath toefsPath(Path other) {
+    private EphemeralFsPath toEfsPath(Path other) {
         if(other == null) {
             throw new NullPointerException();
         }
@@ -555,6 +565,9 @@ class EphemeralFsPath implements Path {
         Iterator<String> iter = parts.iterator();
         while(iter.hasNext()) {
             String part = iter.next();
+            if(part.isEmpty()) {
+                continue;
+            }
             builder.append(part);
             if(iter.hasNext()) {
                 builder.append(fs.getSettings().getSeperator());

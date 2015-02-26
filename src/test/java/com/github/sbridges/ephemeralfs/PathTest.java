@@ -31,6 +31,7 @@ package com.github.sbridges.ephemeralfs;
 
 import static org.junit.Assert.*;
 
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
@@ -39,6 +40,8 @@ import java.nio.file.Path;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import com.github.sbridges.ephemeralfs.junit.FsType;
+import com.github.sbridges.ephemeralfs.junit.IgnoreIf;
 import com.github.sbridges.ephemeralfs.junit.IgnoreIfNoSymlink;
 import com.github.sbridges.ephemeralfs.junit.MultiFsRunner;
 
@@ -56,7 +59,11 @@ public class PathTest {
             //pass
         }
     }
-    
+
+    @Test
+    public void testGetNameEmpty() {
+      assertEquals("", root.getFileSystem().getPath("").getName(0).toString());
+    }
 
     @Test
     public void testToRealPathSimple() throws Exception {
@@ -120,5 +127,33 @@ public class PathTest {
                 root.resolve("a").resolve("..").resolve("b").equals(
                 root.resolve("b"))
                 );
+    }
+    
+    @Test
+    public void testNormalizeMultipleDotDots() {
+        FileSystem fs = root.getFileSystem();
+        assertEquals(fs.getPath("../.."), fs.getPath("../..").normalize());
+        assertEquals(fs.getPath("../.."), fs.getPath(".././..").normalize());
+        assertEquals(fs.getPath("../../a/b/c"), fs.getPath("../../a/b/c").normalize());
+        assertEquals(fs.getPath("../../a/b"), fs.getPath("../../a/b/c/..").normalize());
+        assertEquals(fs.getPath("../../a/b"), fs.getPath("../../a/b/c/./..").normalize());
+    }
+
+    @Test
+    public void testResolveRootRelative() {
+        FileSystem fs = root.getFileSystem();
+        assertFalse(fs.getPath("").isAbsolute());
+        assertFalse(fs.getPath("").resolve("a").isAbsolute());
+    }
+    
+    @IgnoreIf(FsType.WINDOWS)
+    @Test
+    public void testResolveDotRelative() throws Exception {
+        Path a = root.resolve("a");
+        Path b = root.resolve("./b/../a");
+
+        Files.createFile(a);
+        assertTrue(Files.exists(a));
+        assertFalse(Files.exists(b));
     }
 }

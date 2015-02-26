@@ -482,4 +482,18 @@ public class CopyTest {
         assertArrayEquals(contents2, Files.readAllBytes(targetLink));
     }
     
+    @Test
+    public void testCopyFileToSelf() throws Exception {
+        Path source = Files.createFile(root.resolve("source"));
+        Files.copy(source, source);
+        assertTrue(Files.exists(source));
+    }
+    
+    @Test
+    public void testCopyDirToSelf() throws Exception {
+        Path source = Files.createDirectories(root.resolve("source"));
+        Files.copy(source, source);
+        assertTrue(Files.exists(source));
+    }
+    
 }

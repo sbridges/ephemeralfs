@@ -32,6 +32,7 @@ package com.github.sbridges.ephemeralfs;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.Channel;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -353,16 +354,20 @@ class EphemeralFsFileChannel extends FileChannel {
     @Override
     public FileLock lock(long position, long size, boolean shared)
             throws IOException {
-        return tryLock(position, size, shared);
+        return tryLock(this, position, size, shared);
     }
 
     @Override
     public FileLock tryLock(long position, long size, boolean shared)
             throws IOException {
+        return tryLock(this, position, size, shared);
+    }
+    
+    FileLock tryLock(Channel actualChannel, long position, long size, boolean shared) throws IOException {
         synchronized(fc.lock) {
             assertNotClosed(); 
             assertWritable();
-            return fc.tryLock(this, position, size, shared);
+            return fc.tryLock(actualChannel, position, size, shared);
         }
     }
     
@@ -387,7 +392,7 @@ class EphemeralFsFileChannel extends FileChannel {
     private void assertValidIndexes(ByteBuffer[] array, int offset, int length) {
         if(offset < 0 || 
            length < 0 ||
-           offset + length >= array.length) {
+           offset + length > array.length) {
             throw new IllegalArgumentException("invalid offsets");
         }
     }

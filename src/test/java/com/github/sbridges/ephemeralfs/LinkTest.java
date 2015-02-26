@@ -29,6 +29,7 @@
 
 package com.github.sbridges.ephemeralfs;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
@@ -47,6 +48,8 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import com.github.sbridges.ephemeralfs.junit.FsType;
+import com.github.sbridges.ephemeralfs.junit.IgnoreIf;
 import com.github.sbridges.ephemeralfs.junit.IgnoreIfNoSymlink;
 import com.github.sbridges.ephemeralfs.junit.MultiFsRunner;
 
@@ -517,6 +520,25 @@ public class LinkTest {
         } catch(FileAlreadyExistsException e) {
             //pass
         }
+    }
+    
+    @IgnoreIf(FsType.WINDOWS)
+    @Test
+    public void testCopySymbolicLinkReplace() throws IOException {
+
+        Path file1 = root.resolve("file1");
+        Path file2 = root.resolve("file2");
+        Files.createFile(file1);
+        Files.createFile(file2);
+
+        Path target = file1.resolveSibling("target");
+
+        Files.createSymbolicLink(target, file1);
+
+        Files.copy(file2, target, REPLACE_EXISTING);
+
+        assertTrue(Files.exists(target));
+        assertFalse(Files.isSymbolicLink(target));
     }
     
     private List<Path> list(Path path) throws IOException {
