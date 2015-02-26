@@ -7,6 +7,7 @@ EphemeralFs tries to mimic the behaviour of java.nio.FileSystem for Windows, OS-
 
 EphemeralFsFileSystemChecker allows asserting that all resources are closed, and that all file contents have been properly fsynced. 
 
+[![Build Status](https://travis-ci.org/sbridges/ephemeralfs.png?branch=master)](https://travis-ci.org/sbridges/ephemeralfs) 
 
 Getting Started
 ===============
