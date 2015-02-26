@@ -61,6 +61,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.auto.service.AutoService;
+
 /**
  * 
  * An in memory FileSystem, suitable for testing.<P>
@@ -91,6 +93,7 @@ import java.util.regex.Pattern;
  *    <li>{@link java.nio.file.spi.FileSystemProvider#setAttribute(Path, String, Object, LinkOption...)}</li>
  * </ul> 
  */
+@AutoService(FileSystemProvider.class)
 public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
 
     static final String SCHEME = "ephemeralfs";
