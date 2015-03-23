@@ -38,6 +38,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.DosFileAttributeView;
 import java.nio.file.attribute.DosFileAttributes;
 import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.FileOwnerAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributeView;
@@ -77,6 +78,8 @@ class FileAttributesViewBuilder {
             return (V) new EphemeralFsPosixFileAttributesView();
         } else if (type == DosFileAttributeView.class) {
             return (V) new EphemeralFsDosFileAttributesView();
+        } else if (type == FileOwnerAttributeView.class) {
+            return (V) new EphemeralFsFileOwnerAttributeView();
         } else {
             throw new UnsupportedOperationException("type:" + type
                     + " is not supported");
@@ -91,10 +94,15 @@ class FileAttributesViewBuilder {
             if (resolved.resolvedToSymbolicLink()) {
                 DirectoryEntry entry = resolved.getParent().resolve(
                         path.getFileName());
-                return new FileAttributesSnapshot(fs, entry.getFileTimes(),
-                        false, false, true, false, 1, entry.getId(),
-                        FilePermissions.createDefaultFile()
-                                .toPosixFilePermissions());
+                return new FileAttributesSnapshot(
+                        false, 
+                        false, 
+                        true,
+                        false, 
+                        1, 
+                        1,
+                        entry.getLinkProperties()        
+                        );
             }
 
             return resolved.getTarget().getAttributes();
@@ -106,23 +114,23 @@ class FileAttributesViewBuilder {
         closeChecker.assertNotClosed();
         synchronized (fs.fsLock) {
             ResolvedPath rs = resolve(pathProvider.get());
-            
-            //TODO - handle setting file times on symbolic links
+
             if(!rs.resolvedToSymbolicLink()) {
                 if (lastModifiedTime != null) {
-                    rs.getTarget().setLastModifiedTime(lastModifiedTime.toMillis());
+                    rs.getResolvedProperties().getFileTimes().setLastModifiedTime(lastModifiedTime.toMillis());
                 }
                 if (createTime != null) {
-                    rs.getTarget().setCreationTime(createTime.toMillis());
+                    rs.getResolvedProperties().getFileTimes().setCreationTime(createTime.toMillis());
                 }
                 if (lastAccessTime != null) {
-                    rs.getTarget().setLastModifiedTime(lastAccessTime.toMillis());
+                    rs.getResolvedProperties().getFileTimes().setLastModifiedTime(lastAccessTime.toMillis());
                 }   
                 rs.getTarget().notifyChange(rs.getPath());
             }
         }
-
     }
+    
+    
 
     private ResolvedPath resolve(EphemeralFsPath path) throws FileSystemException,
             NoSuchFileException {
@@ -228,23 +236,66 @@ class FileAttributesViewBuilder {
 
         @Override
         public void setReadOnly(boolean value) throws IOException {
-            throw new UnsupportedOperationException();
+            closeChecker.assertNotClosed();
+            synchronized (fs.fsLock) {
+                ResolvedPath rs = resolve(pathProvider.get());
+                rs.getResolvedProperties().setDosIsReadOnly(value);
+            }
 
         }
 
         @Override
         public void setHidden(boolean value) throws IOException {
-            throw new UnsupportedOperationException();
+            closeChecker.assertNotClosed();
+            synchronized (fs.fsLock) {
+                ResolvedPath rs = resolve(pathProvider.get());
+                rs.getResolvedProperties().setDosIsHidden(value);
+                
+            }
         }
 
         @Override
         public void setSystem(boolean value) throws IOException {
-            throw new UnsupportedOperationException();
+            closeChecker.assertNotClosed();
+            synchronized (fs.fsLock) {
+                ResolvedPath rs = resolve(pathProvider.get());
+                rs.getResolvedProperties().setDosIsSystem(value);
+            }
         }
 
         @Override
         public void setArchive(boolean value) throws IOException {
-            throw new UnsupportedOperationException();
+            closeChecker.assertNotClosed();
+            synchronized (fs.fsLock) {
+                ResolvedPath rs = resolve(pathProvider.get());
+                rs.getResolvedProperties().setDosIsArchive(value);
+            }
+        }
+    }
+    
+    class EphemeralFsFileOwnerAttributeView implements FileOwnerAttributeView {
+
+        @Override
+        public String name() {
+            return "owner";
+        }
+
+        @Override
+        public UserPrincipal getOwner() throws IOException {
+            closeChecker.assertNotClosed();
+            synchronized (fs.fsLock) {
+                ResolvedPath rs = resolve(pathProvider.get());
+                return rs.getResolvedProperties().getOwner();
+            }
+        }
+
+        @Override
+        public void setOwner(UserPrincipal owner) throws IOException {
+            closeChecker.assertNotClosed();
+            synchronized (fs.fsLock) {
+                ResolvedPath rs = resolve(pathProvider.get());
+                rs.getResolvedProperties().setOwner(owner);
+            } 
         }
     }
 

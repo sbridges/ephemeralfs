@@ -38,21 +38,11 @@ import java.nio.file.attribute.UserPrincipalNotFoundException;
 class EphemeralFsUserPrincipalLookupService extends
         UserPrincipalLookupService {
 
-    public final UserPrincipal userPrincipal = new UserPrincipal() {
-        
-        @Override
-        public String getName() {
-            return "username";
-        }
-    };
+    public static final String DEFAULT_USER = "username";
+    public static final String DEFAULT_GROUP = "group";
     
-    public final GroupPrincipal groupPrincipal = new GroupPrincipal() {
-        
-        @Override
-        public String getName() {
-            return "group";
-        }
-    };
+    public final UserPrincipal userPrincipal = new EphemeralFsUserPrincipal(DEFAULT_USER, 1001);
+    public final GroupPrincipal groupPrincipal = new EphemeralFsGroupPrincipal(DEFAULT_GROUP, 2001);
     
     @Override
     public UserPrincipal lookupPrincipalByName(String name) throws IOException {

@@ -29,69 +29,41 @@
 
 package com.github.sbridges.ephemeralfs;
 
-import java.io.IOException;
-import java.nio.file.FileStore;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
+import static org.junit.Assert.assertNotNull;
 
-class EphemeralFsFileStore extends FileStore {
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.nio.file.attribute.UserPrincipal;
+import java.util.Arrays;
 
-    private final EphemeralFsFileSystem fs;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.github.sbridges.ephemeralfs.junit.MultiFsRunner;
+
+@RunWith(MultiFsRunner.class)
+public class OwnerFileAttributesTest {
+
+    Path root;
     
-    public EphemeralFsFileStore(EphemeralFsFileSystem fs) {
-        this.fs = fs;
+    @Test
+    public void testReadOwner() throws Exception {
+        for(Path path : Arrays.asList(
+                Files.createDirectory(root.resolve("dir")),
+                Files.createFile(root.resolve("file")))) {
+            
+            FileOwnerAttributeView view = Files.getFileAttributeView(path, FileOwnerAttributeView.class);
+            assertNotNull(view.getOwner());
+            view.setOwner(view.getOwner());
+            
+            UserPrincipal owner = (UserPrincipal) Files.getAttribute(path, "owner:owner");
+            assertNotNull(owner);
+        }
+        
     }
 
-    @Override
-    public String name() {
-        return getClass().getSimpleName();
-    }
 
-    @Override
-    public String type() {
-        return EphemeralFsFileSystemProvider.SCHEME;
-    }
 
-    @Override
-    public boolean isReadOnly() {
-        return false;
-    }
-
-    @Override
-    public long getTotalSpace() throws IOException {
-        return fs.getSettings().getTotalSpace();
-    }
-
-    @Override
-    public long getUsableSpace() throws IOException {
-        return fs.getLimits().getFreeSpace();
-    }
-
-    @Override
-    public long getUnallocatedSpace() throws IOException {
-        return fs.getLimits().getFreeSpace();
-    }
-
-    @Override
-    public boolean supportsFileAttributeView(
-            Class<? extends FileAttributeView> type) {
-        return fs.getAttributes().supportsFileAttributeView(type);
-    }
-
-    @Override
-    public boolean supportsFileAttributeView(String name) {
-        return fs.supportedFileAttributeViews().contains(name);
-    }
-
-    @Override
-    public <V extends FileStoreAttributeView> V getFileStoreAttributeView(
-            Class<V> type) {
-        return null;
-    }
-
-    @Override
-    public Object getAttribute(String attribute) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
+    
 }

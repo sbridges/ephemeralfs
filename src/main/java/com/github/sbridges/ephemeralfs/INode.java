@@ -30,6 +30,7 @@
 package com.github.sbridges.ephemeralfs;
 
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
@@ -47,18 +48,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A file or a directory. 
  */
 class INode {
     
-    static final AtomicLong iNodeCounter = new AtomicLong();
-    private final Long iNodeNumber = iNodeCounter.incrementAndGet();
-    
-    private final FilePermissions filePermissions;
-  
     //only set if this is a directory
     private final Map<FileName, DirectoryEntry> children;
     //this is set if this is a directory, allows
@@ -66,10 +61,12 @@ class INode {
     private final EphemeralFsFileSystem fs;
     private final List<INode> parents = new ArrayList<>();
     private final boolean root;
-    private final EphemeralFsFileTimes fileTimes = new EphemeralFsFileTimes();
+    
     
     private int hardLinks = -1;
     private int openFileHandles;
+    
+    private final FileProperties fileProperties;
     
     /**
      * Create an directory INode
@@ -88,7 +85,7 @@ class INode {
         this.contents.setDirty(false);
         this.fs = fileSystem;
         this.root = root;
-        this.filePermissions = filePermissions;
+        this.fileProperties = new FileProperties(fileSystem, filePermissions, false);
     }
 
     /**
@@ -99,7 +96,8 @@ class INode {
         this.children = null;
         this.fs = fileSystem;
         this.root = false;
-        this.filePermissions = filePermissions;
+        this.fileProperties = new FileProperties(fileSystem, filePermissions, true);
+        
     }
 
     static INode createRoot(EphemeralFsFileSystem fileSystem) {
@@ -266,15 +264,13 @@ class INode {
             size = 0;
         }
         return new FileAttributesSnapshot(
-                fs,
-                fileTimes,
                 isFile(),
                 isDir(),
-                false,
+                false, /* symbolic link */
                 false /* other */, 
                 size,
-                iNodeNumber,
-                filePermissions.toPosixFilePermissions()
+                isDir() ? hardLinks + 1 : hardLinks,
+                fileProperties
                 );
     }
     
@@ -286,6 +282,10 @@ class INode {
             throw new IllegalStateException();
         }
         return contents.getSize();
+    }
+    
+    public FileProperties getProperties() {
+        return fileProperties;
     }
 
     public void notifyChange(EphemeralFsPath path) throws NoSuchFileException {
@@ -340,6 +340,10 @@ class INode {
                             options.contains(StandardOpenOption.APPEND);
         boolean readable = options.contains(StandardOpenOption.READ) || 
                            !writeable;  
+        
+        if(writeable && fs.getSettings().isWindows() && resolvedPath.getResolvedProperties().getDosIsReadOnly()) {
+            throw new AccessDeniedException(resolvedPath.getPath().toString());
+        }
         
         return contents.newChannel(
                 readable,
@@ -417,28 +421,29 @@ class INode {
         }
         return null;
     }
-
+   
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("INode[id=");
-        builder.append(iNodeNumber);
-        builder.append(" type:");
-        if(isDir()) {
-            builder.append("dir");
-        } else if(isFile()) {
-            builder.append("file");
-        }  else {
-            throw new IllegalStateException();
-        }
-        if(isDir()) {
-            builder.append(", children:").append(children.keySet());
-        }
+        builder.append("INode[children=");
+        builder.append(children);
+        builder.append(", contents=");
+        builder.append(contents);
+        builder.append(", fs=");
+        builder.append(fs);
+        builder.append(", parents=");
+        builder.append(parents);
+        builder.append(", root=");
+        builder.append(root);
+        builder.append(", hardLinks=");
+        builder.append(hardLinks);
+        builder.append(", openFileHandles=");
+        builder.append(openFileHandles);
+        builder.append(", fileProperties=");
+        builder.append(fileProperties);
         builder.append("]");
         return builder.toString();
     }
-    
-
 
     public EphemeralFsPath getSymbolicLink(Path parent, EphemeralFsPath fileName) throws FileSystemException {
         return (EphemeralFsPath) parent.resolve(getRawSymbolicLink(parent, fileName));
@@ -456,43 +461,30 @@ class INode {
     }
     
     public void copyPermissions(INode other) {
-        this.filePermissions.copyFrom(other.filePermissions);
+        fileProperties.getFilePermissions().copyFrom(other.fileProperties.getFilePermissions());
     }
     
     public void setPermissions(Set<PosixFilePermission> perms) {
-        filePermissions.setPermissions(perms);
+        fileProperties.getFilePermissions().setPermissions(perms);
     }
     
     public boolean canWrite() {
-        return filePermissions.canWrite();
+        return fileProperties.getFilePermissions().canWrite();
     }
     
     public boolean canRead() {
-        return filePermissions.canRead();
+        return fileProperties.getFilePermissions().canRead();
     }
     
     public boolean canExecute() {
         if(fs.getSettings().isWindows()) {
-            return filePermissions.canWrite();
+            return fileProperties.getFilePermissions().canWrite();
         }
-        return filePermissions.canExecute();
+        return fileProperties.getFilePermissions().canExecute();
     }
     
     public EphemeralFsFileSystem getFs() {
         return fs;
-    }
-
-    public long getLastModifiedTime() {
-       return fileTimes.getLastModifiedTime();
-    }
-
-    public void setLastModifiedTime(long lastModifiedTime) {
-        fileTimes.setLastModifiedTime(lastModifiedTime);
-        
-    }
-
-    public void setCreationTime(long millis) {
-        fileTimes.setCreationTime(millis);
     }
 
     private void addLink() {
@@ -526,4 +518,7 @@ class INode {
         }
         
     }
+
+
+
 }

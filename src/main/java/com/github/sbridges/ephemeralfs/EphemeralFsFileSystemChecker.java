@@ -42,7 +42,7 @@ public final class EphemeralFsFileSystemChecker {
     /**
      * Throw if there are any open resources for this file system.<P>
      * 
-     * @param fs - A FileSystem created with {@link EphemeralFsFileSystemBuilder#build()}
+     * @param fs A FileSystem created with {@link EphemeralFsFileSystemBuilder#build()}
      * 
      * @throws AssertionError if a resource is open
      * @throws ClassCastException if fs is of the wrong type
@@ -57,7 +57,7 @@ public final class EphemeralFsFileSystemChecker {
      * If path is a file, asserts that all changes to the file have been fsynced, if path is a directory,
      * recursively scans the directory and asserts that all changes to files found have been fsynced.<P>
      * 
-     * @param path - A {@link Path} whose {@link java.nio.file.spi.FileSystemProvider} is {@link EphemeralFsFileSystemProvider}
+     * @param path A {@link Path} whose {@link java.nio.file.spi.FileSystemProvider} is {@link EphemeralFsFileSystemProvider}
      * 
      * @throws AssertionError if a file has not been fsynced
      * @throws IllegalArgumentException if path does not exist
@@ -81,8 +81,8 @@ public final class EphemeralFsFileSystemChecker {
      * Fsyncing directories may not be supported in java 9, 
      * see <a href="https://issues.apache.org/jira/browse/LUCENE-6169">LUCENE-6169</a> <p>
      * 
-     * @param dir - A directory Path whose {@link java.nio.file.spi.FileSystemProvider} is {@link EphemeralFsFileSystemProvider}
-     * @param recursive - if true recursively scans sub directories to find non fsycned directories
+     * @param dir A directory Path whose {@link java.nio.file.spi.FileSystemProvider} is {@link EphemeralFsFileSystemProvider}
+     * @param recursive if true recursively scans sub directories to find non fsycned directories
      * 
      * @throws AssertionError if a directory has not been closed
      * @throws IllegalArgumentException if path does not exist, or is not a directory

@@ -29,69 +29,70 @@
 
 package com.github.sbridges.ephemeralfs;
 
-import java.io.IOException;
-import java.nio.file.FileStore;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
+import java.nio.file.attribute.GroupPrincipal;
 
-class EphemeralFsFileStore extends FileStore {
-
-    private final EphemeralFsFileSystem fs;
+class EphemeralFsGroupPrincipal implements GroupPrincipal {
     
-    public EphemeralFsFileStore(EphemeralFsFileSystem fs) {
-        this.fs = fs;
+    private final String name;
+    private final int gid;
+    
+    public EphemeralFsGroupPrincipal(String name, int gid) {
+        this.name = name;
+        this.gid = gid;
     }
-
+    
     @Override
-    public String name() {
-        return getClass().getSimpleName();
+    public String getName() {
+        return name;
     }
-
+    
+    public int getGid() {
+        return gid;
+    }
+    
+    
     @Override
-    public String type() {
-        return EphemeralFsFileSystemProvider.SCHEME;
+    public String toString() {
+        return name;
     }
-
+    
     @Override
-    public boolean isReadOnly() {
-        return false;
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
+        result = prime * result + gid;
+        return result;
     }
-
+    
     @Override
-    public long getTotalSpace() throws IOException {
-        return fs.getSettings().getTotalSpace();
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        EphemeralFsGroupPrincipal other = (EphemeralFsGroupPrincipal) obj;
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
+        if (gid != other.gid) {
+            return false;
+        }
+        return true;
     }
-
-    @Override
-    public long getUsableSpace() throws IOException {
-        return fs.getLimits().getFreeSpace();
-    }
-
-    @Override
-    public long getUnallocatedSpace() throws IOException {
-        return fs.getLimits().getFreeSpace();
-    }
-
-    @Override
-    public boolean supportsFileAttributeView(
-            Class<? extends FileAttributeView> type) {
-        return fs.getAttributes().supportsFileAttributeView(type);
-    }
-
-    @Override
-    public boolean supportsFileAttributeView(String name) {
-        return fs.supportedFileAttributeViews().contains(name);
-    }
-
-    @Override
-    public <V extends FileStoreAttributeView> V getFileStoreAttributeView(
-            Class<V> type) {
-        return null;
-    }
-
-    @Override
-    public Object getAttribute(String attribute) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
+    
+    
+    
+    
+    
+    
 }

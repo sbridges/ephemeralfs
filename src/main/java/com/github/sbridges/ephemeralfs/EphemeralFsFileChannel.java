@@ -438,7 +438,11 @@ class EphemeralFsFileChannel extends FileChannel {
     private void notifyModified() throws NoSuchFileException {
 
         synchronized(fs.fsLock) {
-            iNode.setLastModifiedTime(System.currentTimeMillis());
+            iNode.getProperties().getFileTimes().setLastModifiedTime(System.currentTimeMillis());
+            
+            if(fs.getSettings().isWindows()) {
+                iNode.getProperties().setDosIsArchive(true);
+            }
             
             //notify twice?  once for meta data once for contents?
             iNode.notifyChange(path);

@@ -153,7 +153,7 @@ class ResolvedPath {
                 if(entry.isSymbolicLink()) {
                     if(noFollowLastSymlink && remaining.isEmpty()) {
                         steps.add(new ResolvedStep(current, fileName));
-                        return new ResolvedPath(fs, steps, null, current, true);
+                        return new ResolvedPath(fs, steps, null, entry, true);
                     }
                     EphemeralFsPath linkTarget = entry.getSymbolicLink();
                     EphemeralFsPath absolutePathSoFar = getPaths(fs, steps);
@@ -188,7 +188,7 @@ class ResolvedPath {
     //path
     private final List<ResolvedStep> steps;
     private final INode target;
-    private final INode directoryContainingSymlink;
+    private final DirectoryEntry symlinkDirectoryEntry;
     //was everything but the parent resolved
     //for example if we resolve
     // /a/b but only /a exists
@@ -202,13 +202,13 @@ class ResolvedPath {
             EphemeralFsFileSystem fs,
             List<ResolvedStep> steps,
             INode target,
-            INode directoryContainingSymlink,
+            DirectoryEntry symlinkDirectoryEntry,
             boolean hasValidParent
             ) {
         this.fs = fs;
         this.steps = steps;
         this.target = target;
-        this.directoryContainingSymlink = directoryContainingSymlink;
+        this.symlinkDirectoryEntry = symlinkDirectoryEntry;
         this.hasValidParent = hasValidParent;
     }
     
@@ -241,12 +241,8 @@ class ResolvedPath {
     }
     
     public boolean resolvedToSymbolicLink() {
-        return directoryContainingSymlink != null;
+        return symlinkDirectoryEntry != null;
     } 
-    
-    public INode getSymLinkParentDirectory() {
-        return steps.get(steps.size() -1).directory;
-    }
     
     /**
      * The full path, after symlinks are resolved.<P>
@@ -294,6 +290,15 @@ class ResolvedPath {
         return getParent().getRawSymbolicLink(null, fs.getPath(steps.get(steps.size() -1).nextStep));
     }
     
+    public FileProperties getResolvedProperties() {
+        if(hasTarget()) {
+            return target.getProperties();
+        }
+        if(resolvedToSymbolicLink()) {
+            return symlinkDirectoryEntry.getLinkProperties();
+        }
+        throw new IllegalStateException("did not resolve");
+    }
     
     @Override
     public String toString() {
@@ -303,7 +308,7 @@ class ResolvedPath {
         builder.append(", target=");
         builder.append(target);
         builder.append(", directoryContainingSymlink=");
-        builder.append(directoryContainingSymlink);
+        builder.append(symlinkDirectoryEntry);
         builder.append("]");
         return builder.toString();
     }

@@ -30,6 +30,7 @@
 package com.github.sbridges.ephemeralfs;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.channels.FileChannel;
@@ -121,7 +122,7 @@ public final class EphemeralFsFileSystemBuilder {
     /**
      * Record stack traces when opening resources such as {@link FileChannel}s and {@link DirectoryStream}s.<P>
      * 
-     * The stack traces are available when calling {@link EphemeralFsFileSystemChecker#assertNoOpenResources(FileSystem)}
+     * The stack traces are available when calling {@link EphemeralFsFileSystemChecker#assertNoOpenResources(FileSystem)}<P>
      * 
      * Defaults to true.
      */
@@ -176,8 +177,12 @@ public final class EphemeralFsFileSystemBuilder {
     }
     
     URI buildURI() {
-        return URI.create(EphemeralFsFileSystemProvider.SCHEME + "://?name=" + URLEncoder.encode(name)
-                );
+        try {
+            return URI.create(EphemeralFsFileSystemProvider.SCHEME + "://?name=" + URLEncoder.encode(name, "UTF-8")
+                    );
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
     }
     
     /**

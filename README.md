@@ -74,23 +74,28 @@ What is supported
 =================
 
 * Basic file/directory operations such as reading, writing ,moving etc
+* InputStream, OutputStream
+* SeekableByteChannel, FileChannel, AsynchronousFileChannel 
 * Symbolic links
 * Hard links
 * SecureDirectoryStream
-* BasicFileAttributes, PosixFileAttributes
+* BasicFileAttributes, PosixFileAttributes, DosFileAttributes
+* "basic", "dos", "owner", "posix", "unix" file attributes
 * WatchService
 * Globs
+* FileLock
+* Maximum file system size
+* Checking file system state (all resources closed, all files fsynced)
 
 TODO
 ====
 
 * Users/Groups
 * File Permissions
-* DosFileAttributes
 * Last access time
 * File sizes > 2GB
-* FileSystemProvider#readAttributes
-* FileSystemProvider#setAttributes
+* FileTypeDetector
+* AclFileAttributeView
 
 
 What can't be supported

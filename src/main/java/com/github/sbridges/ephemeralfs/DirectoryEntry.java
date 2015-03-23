@@ -40,12 +40,22 @@ class DirectoryEntry {
 
     private final INode destination;
     private final EphemeralFsPath symbolicLink;
-    private final EphemeralFsFileTimes created = new EphemeralFsFileTimes();
-    private final Long id = INode.iNodeCounter.incrementAndGet();
+    
+    private final FileProperties linkProperties;
     
     public DirectoryEntry(EphemeralFsPath link) {
         this.destination = null;
         this.symbolicLink = link;
+        this.linkProperties = new FileProperties(
+                link.fs, 
+                FilePermissions.createDefaultSymlink(),
+                false);
+    }
+    
+    public DirectoryEntry(INode destination) {
+        this.destination = destination;
+        this.symbolicLink = null;
+        this.linkProperties = null;
     }
     
     public EphemeralFsPath getSymbolicLink() {
@@ -60,19 +70,10 @@ class DirectoryEntry {
         return destination;
     }
 
-    public DirectoryEntry(INode destination) {
-        this.destination = destination;
-        this.symbolicLink = null;
+    public FileProperties getLinkProperties() {
+        return linkProperties;
     }
     
-    public EphemeralFsFileTimes getFileTimes() {
-        return created;
-    }
-    
-    public Object getId() {
-        return id;
-    }
-
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -80,11 +81,11 @@ class DirectoryEntry {
         builder.append(destination);
         builder.append(", symbolicLink=");
         builder.append(symbolicLink);
-        builder.append(", created=");
-        builder.append(created);
-        builder.append(", id=");
-        builder.append(id);
+        builder.append(", linkProperties=");
+        builder.append(linkProperties);
         builder.append("]");
         return builder.toString();
     }
+
+    
 }

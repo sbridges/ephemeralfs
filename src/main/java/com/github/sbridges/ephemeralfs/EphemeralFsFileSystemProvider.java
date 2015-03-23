@@ -54,14 +54,13 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.google.auto.service.AutoService;
 
 /**
  * 
@@ -81,19 +80,7 @@ import com.google.auto.service.AutoService;
  * </code>
  * </pre>
  *
- * TODO
- * <ul>
- *    <li>Users/Groups</li>
- *    <li>File Permissions</li>
- *    <li>DosFileAttributes</li>    
- *    <li>Last access time</li>
- *    <li>Allow file sizes > Integer.MAX_VALUE</li>
- *    <li>Some methods in {@link FileStore}</li>
- *    <li>{@link java.nio.file.spi.FileSystemProvider#readAttributes(Path, Class, LinkOption...)}</li>
- *    <li>{@link java.nio.file.spi.FileSystemProvider#setAttribute(Path, String, Object, LinkOption...)}</li>
- * </ul> 
  */
-@AutoService(FileSystemProvider.class)
 public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
 
     static final String SCHEME = "ephemeralfs";
@@ -208,13 +195,13 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
     public SeekableByteChannel newByteChannel(Path path,
             Set<? extends OpenOption> options, FileAttribute<?>... attrs)
             throws IOException {
-        return getFs(path).newByteChannel(toefsPath(path), options, attrs);
+        return getFs(path).newByteChannel(toEfsPath(path), options, attrs);
     }
 
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir,
             Filter<? super Path> filter) throws IOException {
-        return getFs(dir).newDirectoryStream(toefsPath(dir), filter);
+        return getFs(dir).newDirectoryStream(toEfsPath(dir), filter);
     }
 
     @Override
@@ -227,23 +214,23 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
     public void createSymbolicLink(Path link, Path target, FileAttribute<?>... attrs)
             throws IOException {
         getFs(link).createSymbolicLink(
-                toefsPath(link), 
-                toefsPath(target), 
+                toEfsPath(link), 
+                toEfsPath(target), 
                 attrs);
     }
     
     @Override
     public void createLink(Path link, Path existing) throws IOException {
         getFs(link).createLink(
-                toefsPath(link),
-                toefsPath(existing)
+                toEfsPath(link),
+                toEfsPath(existing)
                 );
     }
 
     
     @Override
     public void delete(Path path) throws IOException {
-        getFs(path).delete(toefsPath(path));
+        getFs(path).delete(toEfsPath(path));
 
     }
 
@@ -254,7 +241,7 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
             throw new IllegalArgumentException(
                     "source and target have different file systems");
         }
-        getFs(source).copy(toefsPath(source), toefsPath(target),
+        getFs(source).copy(toEfsPath(source), toEfsPath(target),
                 options);
     }
 
@@ -262,7 +249,7 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
     public void move(Path source, Path target, CopyOption... options)
             throws IOException {
         assertSameFs(source, target);
-        getFs(source).move(toefsPath(source), toefsPath(target),
+        getFs(source).move(toEfsPath(source), toEfsPath(target),
                 options);
 
     }
@@ -275,7 +262,7 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
         if(path.equals(path2)) {
             return true;
         }
-        return getFs(path).isSameFile(toefsPath(path), toefsPath(path2));
+        return getFs(path).isSameFile(toEfsPath(path), toEfsPath(path2));
     }
 
     @Override
@@ -298,13 +285,13 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
 
     @Override
     public void checkAccess(Path path, AccessMode... modes) throws IOException {
-        getFs(path).checkAccess(toefsPath(path), modes);
+        getFs(path).checkAccess(toEfsPath(path), modes);
     }
 
     @Override
     public <V extends FileAttributeView> V getFileAttributeView(Path path,
             Class<V> type, LinkOption... options) {
-        EphemeralFsPath efsPath = toefsPath(path);
+        EphemeralFsPath efsPath = toEfsPath(path);
         return efsPath.fs.getFileAttributeView(
                 new EphemeralFsPathProvider.ConstefsPathProvider(efsPath), 
                 type, 
@@ -323,18 +310,41 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
     @Override
     public Map<String, Object> readAttributes(Path path, String attributes,
             LinkOption... options) throws IOException {
-        throw new UnsupportedOperationException();
+        EphemeralFsPath efsPath = toEfsPath(path);
+        synchronized(efsPath.fs.fsLock) {
+            FileAttributesViewBuilder builder = efsPath.fs.getFileAttributesViewBuilder(
+                    new EphemeralFsPathProvider.ConstefsPathProvider(efsPath), 
+                    CloseChecker.ALWAYS_OPEN, 
+                    options);
+            Map<String, Object> answer = new HashMap<>();
+            for(Attribute a : efsPath.fs.getAttributes().getMultiple(attributes)) {
+                answer.put(
+                        a.getName(),
+                        a.read(builder)
+                        );
+            }
+            return answer;
+        }
+        
     }
 
     @Override
     public void setAttribute(Path path, String attribute, Object value,
             LinkOption... options) throws IOException {
-        throw new UnsupportedOperationException();
+        
+        EphemeralFsPath efsPath = toEfsPath(path);
+        synchronized(efsPath.fs.fsLock) {
+            FileAttributesViewBuilder builder = efsPath.fs.getFileAttributesViewBuilder(
+                    new EphemeralFsPathProvider.ConstefsPathProvider(efsPath), 
+                    CloseChecker.ALWAYS_OPEN, 
+                    options);
+            efsPath.fs.getAttributes().write(attribute, builder, value);
+        }
     }
 
     @Override
     public Path readSymbolicLink(Path link) throws IOException {
-        return getFs(link).readSymbolicLink(toefsPath(link));
+        return getFs(link).readSymbolicLink(toEfsPath(link));
     }
     
     @Override
@@ -349,17 +359,17 @@ public final class EphemeralFsFileSystemProvider extends FileSystemProvider {
             Set<? extends OpenOption> options, ExecutorService executor,
             FileAttribute<?>... attrs) throws IOException {
         return getFs(path).newAsynchronousByteChannel(
-                toefsPath(path), 
+                toEfsPath(path), 
                 options,
                 executor,
                 attrs);
     }
 
     private EphemeralFsFileSystem getFs(Path p) {
-        return toefsPath(p).getFileSystem();
+        return toEfsPath(p).getFileSystem();
     }
 
-    private EphemeralFsPath toefsPath(Path p) {
+    private EphemeralFsPath toEfsPath(Path p) {
         return ((EphemeralFsPath) p);
     }
 

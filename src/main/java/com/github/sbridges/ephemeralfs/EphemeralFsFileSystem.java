@@ -93,7 +93,12 @@ class EphemeralFsFileSystem extends FileSystem {
     private final WatchRegistry watchRegistry = new WatchRegistry();
     private final EphemeralFsFileStore fileStore = new EphemeralFsFileStore(this);
     private final Limits limits;
+    private final AttributeLookup attributes;
     
+    public AttributeLookup getAttributes() {
+        return attributes;
+    }
+
     private final Set<CloseTracker> notClosed = Collections.newSetFromMap(new ConcurrentHashMap<CloseTracker, Boolean>());
     
     public WatchRegistry getWatchRegistry() {
@@ -116,6 +121,22 @@ class EphemeralFsFileSystem extends FileSystem {
         this.provider = provider;
         this.root = INode.createRoot(this);
         this.limits = new Limits(settings);
+        
+        if(settings.isWindows()) {
+            attributes = new AttributeLookup(
+                    AttributeSet.BASIC,
+                    AttributeSet.OWNER,
+                    AttributeSet.DOS
+                    );
+        } else {
+            attributes = new AttributeLookup(
+                    AttributeSet.BASIC,
+                    AttributeSet.DOS,
+                    AttributeSet.POSIX,
+                    AttributeSet.UNIX,
+                    AttributeSet.OWNER
+                    );
+        }
     }
 
     @Override
@@ -157,7 +178,7 @@ class EphemeralFsFileSystem extends FileSystem {
 
     @Override
     public Set<String> supportedFileAttributeViews() {
-        return Collections.unmodifiableSet(new HashSet<>(Arrays.asList("basic", "posix", "dos")));
+        return attributes.getViews();
     }
 
     @Override
@@ -439,6 +460,9 @@ class EphemeralFsFileSystem extends FileSystem {
             if(!resolvedPath.didResolve()) {
                 throw new NoSuchFileException(path.toString());
             }
+            if(getSettings().isWindows() && resolvedPath.getResolvedProperties().getDosIsReadOnly()) {
+                throw new AccessDeniedException(path.toString());
+            }
             resolvedPath.getParent().remove(resolvedPath.getPath().getFileName());
         }
         
@@ -583,11 +607,13 @@ class EphemeralFsFileSystem extends FileSystem {
             if(modified != null) {
                 if(settings.isPosix()) {
                     if(optionsSet.contains(StandardCopyOption.COPY_ATTRIBUTES)) {
-                        modified.setLastModifiedTime(resolvedSource.getTarget().getLastModifiedTime());
+                        modified.getProperties().getFileTimes().setLastModifiedTime(
+                                resolvedSource.getResolvedProperties().getFileTimes().getLastModifiedTime());
                     }
                 } else {
                     //windows always copies last modified time it seems
-                    modified.setLastModifiedTime(resolvedSource.getTarget().getLastModifiedTime());
+                    modified.getProperties().getFileTimes().setLastModifiedTime(
+                            resolvedSource.getResolvedProperties().getFileTimes().getLastModifiedTime());
                 }
             }
             
@@ -620,13 +646,22 @@ class EphemeralFsFileSystem extends FileSystem {
             Class<V> type,
             CloseChecker closeChecker,
             LinkOption... options) {
+        return getFileAttributesViewBuilder(
+                pathProvider, closeChecker, options).build(type);
+    }
+
+    public FileAttributesViewBuilder getFileAttributesViewBuilder(
+            EphemeralFsPathProvider pathProvider, CloseChecker closeChecker,
+            LinkOption... options) {
+        FileAttributesViewBuilder builder;
         synchronized(fsLock) {
-                return new FileAttributesViewBuilder(
+                builder = new FileAttributesViewBuilder(
                         this, 
                         pathProvider, 
                         closeChecker, 
-                        options).build(type);
+                        options);
         }
+        return builder;
     }
     
     DirectoryStream<Path> newDirectoryStream(

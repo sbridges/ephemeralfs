@@ -37,24 +37,54 @@ import java.util.Set;
 
 class FilePermissions {
 
-    private final EnumSet<Permissions> permissions;
+    private final EnumSet<PosixFilePermission> permissions;
 
     public static FilePermissions createDefaultFile() {
-        return new FilePermissions(EnumSet.of(Permissions.READ,
-                Permissions.WRITE));
+        return new FilePermissions(EnumSet.of(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_WRITE,
+                PosixFilePermission.OTHERS_READ
+                
+                ));
     }
 
     public static FilePermissions createDefaultDirectory() {
-        return new FilePermissions(EnumSet.of(Permissions.READ,
-                Permissions.WRITE, Permissions.EXECUTE));
+        return new FilePermissions(EnumSet.of(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_WRITE,
+                PosixFilePermission.GROUP_EXECUTE,
+                PosixFilePermission.OTHERS_READ,
+                PosixFilePermission.OTHERS_EXECUTE
+                
+                ));
+    }
+    
+    public static FilePermissions createDefaultSymlink() {
+        return new FilePermissions(EnumSet.of(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_WRITE,
+                PosixFilePermission.GROUP_EXECUTE,
+                PosixFilePermission.OTHERS_READ,
+                PosixFilePermission.OTHERS_WRITE,
+                PosixFilePermission.OTHERS_EXECUTE
+                
+                ));
     }
 
     public FilePermissions(boolean isDirectory, FileAttribute<?>... attributes) {
         this(convertFromNioFileAttributes(isDirectory, attributes));
     }
 
-    private FilePermissions(EnumSet<Permissions> permissions) {
-        this.permissions = permissions;
+    private FilePermissions(EnumSet<PosixFilePermission> permissions) {
+        this.permissions = EnumSet.copyOf(permissions);
     }
 
     public void copyFrom(FilePermissions other) {
@@ -63,81 +93,54 @@ class FilePermissions {
     }
 
     public boolean canRead() {
-        return permissions.contains(Permissions.READ);
+        return permissions.contains(PosixFilePermission.OWNER_READ) ||
+                permissions.contains(PosixFilePermission.GROUP_READ)||
+                permissions.contains(PosixFilePermission.OTHERS_READ);
     }
 
     public boolean canWrite() {
-        return permissions.contains(Permissions.WRITE);
+        return permissions.contains(PosixFilePermission.OWNER_WRITE) ||
+                permissions.contains(PosixFilePermission.GROUP_WRITE)||
+                permissions.contains(PosixFilePermission.OTHERS_WRITE);
+
     }
 
     public boolean canExecute() {
-        return permissions.contains(Permissions.EXECUTE);
+        return permissions.contains(PosixFilePermission.OWNER_EXECUTE) ||
+                permissions.contains(PosixFilePermission.GROUP_EXECUTE)||
+                permissions.contains(PosixFilePermission.OTHERS_EXECUTE);
+
     }
 
-    private static EnumSet<Permissions> convertFromNioFileAttributes(
+    private static EnumSet<PosixFilePermission> convertFromNioFileAttributes(
             boolean isDirectory, FileAttribute<?>... attributes) {
-
+        
         if (attributes != null) {
             for (FileAttribute<?> attr : attributes) {
                 if (attr.name().equals("posix:permissions")) {
-                    Collection<PosixFilePermission> callerPerms = (Collection<PosixFilePermission>) attr
-                            .value();
-                    EnumSet<Permissions> answer = EnumSet
-                            .noneOf(Permissions.class);
-
-                    if (callerPerms.contains(PosixFilePermission.OWNER_READ)) {
-                        answer.add(Permissions.READ);
-                    }
-                    if (callerPerms.contains(PosixFilePermission.OWNER_WRITE)) {
-                        answer.add(Permissions.WRITE);
-                    }
-                    if (callerPerms.contains(PosixFilePermission.OWNER_EXECUTE)) {
-                        answer.add(Permissions.EXECUTE);
-                    }
-                    return answer;
+                    Collection<PosixFilePermission> callerPerms = 
+                            (Collection<PosixFilePermission>) attr.value();
+                    return EnumSet.copyOf(callerPerms);
                 }
             }
         }
         if (isDirectory) {
-            return EnumSet.of(Permissions.READ, Permissions.WRITE,
-                    Permissions.EXECUTE);
+            return createDefaultDirectory().permissions;
         } else {
-            return EnumSet.of(Permissions.READ, Permissions.WRITE);
+            return createDefaultFile().permissions;
         }
     }
 
     public Set<PosixFilePermission> toPosixFilePermissions() {
         EnumSet<PosixFilePermission> answer = EnumSet
                 .noneOf(PosixFilePermission.class);
-        if (permissions.contains(Permissions.READ)) {
-            answer.add(PosixFilePermission.OWNER_READ);
-            answer.add(PosixFilePermission.GROUP_READ);
-            answer.add(PosixFilePermission.OTHERS_READ);
-        }
-        if (permissions.contains(Permissions.WRITE)) {
-            answer.add(PosixFilePermission.OWNER_WRITE);
-            answer.add(PosixFilePermission.GROUP_WRITE);
-            answer.add(PosixFilePermission.OTHERS_WRITE);
-        }
-        if (permissions.contains(Permissions.EXECUTE)) {
-            answer.add(PosixFilePermission.OWNER_EXECUTE);
-            answer.add(PosixFilePermission.GROUP_EXECUTE);
-            answer.add(PosixFilePermission.OTHERS_EXECUTE);
-        }
+        answer.addAll(permissions);
         return answer;
     }
 
     public void setPermissions(Set<PosixFilePermission> perms) {
         permissions.clear();
-        if(perms.contains(PosixFilePermission.OWNER_READ)) {
-            permissions.add(Permissions.READ);
-        }
-        if(perms.contains(PosixFilePermission.OWNER_WRITE)) {
-            permissions.add(Permissions.WRITE);
-        }
-        if(perms.contains(PosixFilePermission.OWNER_EXECUTE)) {
-            permissions.add(Permissions.EXECUTE);
-        }
+        permissions.addAll(perms);
         
     }
 }

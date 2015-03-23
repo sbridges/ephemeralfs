@@ -56,33 +56,50 @@ class FileAttributesSnapshot {
     private final boolean other;
     private final long size;
     private final Object key;
+    private final Long iNodeNumber;
     private final Set<PosixFilePermission> permissions;
     
+    private final boolean dosIsArchive;
+    private final boolean dosIsHidden;
+    private final boolean dosIsReadOnly;
+    private final boolean dosIsSystem;
+    
+    private final EphemeralFsUserPrincipal owner;
+    private final GroupPrincipal group;
+    private final int nLink;
+    
     public FileAttributesSnapshot(
-            EphemeralFsFileSystem fs,
-            EphemeralFsFileTimes fileTimes,
             boolean regularFile, 
             boolean directory, 
             boolean symbolicLink,
             boolean other, 
             long size, 
-            Object key,
-            Set<PosixFilePermission> permissions) {
+            int nLink,
+            FileProperties fileProperties) {
         
-        this.fs =  fs;
-        this.creationTime = fileTimes.getCreationTime();
-        this.lastModifiedTime = fileTimes.getLastModifiedTime();
-        this.lastAccessTime = fileTimes.getLastAccessTime();
+        this.fs =  fileProperties.getFs();
+        this.creationTime = fileProperties.getFileTimes().getCreationTime();
+        this.lastModifiedTime = fileProperties.getFileTimes().getLastModifiedTime();
+        this.lastAccessTime = fileProperties.getFileTimes().getLastAccessTime();
         
         this.regularFile = regularFile;
         this.directory = directory;
         this.symbolicLink = symbolicLink;
         this.other = other;
         this.size = size;
-        this.key = key;
+        this.nLink = nLink;
+        this.key = fileProperties.getiNodeNumber();
         this.permissions = Collections.unmodifiableSet(
-                EnumSet.copyOf(permissions)
+                EnumSet.copyOf(fileProperties.getFilePermissions().toPosixFilePermissions())
                 );
+        
+        this.dosIsArchive = fileProperties.getDosIsArchive();
+        this.dosIsHidden = fileProperties.getDosIsHidden();
+        this.dosIsReadOnly = fileProperties.getDosIsReadOnly();
+        this.dosIsSystem = fileProperties.getDosIsSystem();
+        this.owner = fileProperties.getOwner();
+        this.group = fileProperties.getGroup();
+        this.iNodeNumber = fileProperties.getiNodeNumber();
     }
     
     public boolean isRegularFile() {
@@ -125,6 +142,14 @@ class FileAttributesSnapshot {
         return permissions;
     }
     
+    public EphemeralFsUserPrincipal getOwner() {
+        return owner;
+    }
+    
+    public EphemeralFsGroupPrincipal getGroup() {
+        return (EphemeralFsGroupPrincipal) group;
+    }
+    
     public <V extends BasicFileAttributes> V cast(Class<V> type) {
         if(type == BasicFileAttributes.class) {
             return (V) new EphemeralFsBasicFileAttributes();
@@ -132,7 +157,9 @@ class FileAttributesSnapshot {
             return (V) new EphemeralFsPosixFileAttributes();
        } else if(type == DosFileAttributes.class) { 
            return (V) new EphemeralFsDosFileAttributes();
-       } else {
+       }
+       //there is no FileOwnerAttributes ?
+       else {
            throw new UnsupportedOperationException("type:" + type + " is not supported");
        }
    }
@@ -184,14 +211,13 @@ class FileAttributesSnapshot {
         public Object fileKey() {
             return FileAttributesSnapshot.this.fileKey();
         }
-        
     }
     
     class EphemeralFsPosixFileAttributes extends EphemeralFsBasicFileAttributes implements PosixFileAttributes {
 
         @Override
         public UserPrincipal owner() {
-            return ((EphemeralFsUserPrincipalLookupService) fs.getUserPrincipalLookupService()).userPrincipal;
+            return FileAttributesSnapshot.this.owner;
         }
 
         @Override
@@ -210,22 +236,30 @@ class FileAttributesSnapshot {
 
         @Override
         public boolean isReadOnly() {
-            return false;
+            return FileAttributesSnapshot.this.dosIsReadOnly;
         }
 
         @Override
         public boolean isHidden() {
-            return false;
+            return FileAttributesSnapshot.this.dosIsHidden;
         }
 
         @Override
         public boolean isArchive() {
-            return false;
+            return FileAttributesSnapshot.this.dosIsArchive;
         }
 
         @Override
         public boolean isSystem() {
-            return false;
+            return FileAttributesSnapshot.this.dosIsSystem;
         }
+    }
+
+    public Long getINodeNumber() {
+        return iNodeNumber;
+    }
+
+    public int getNLink() {
+        return nLink;
     }
 }
