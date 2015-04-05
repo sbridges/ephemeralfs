@@ -4,7 +4,7 @@
 
     <groupId>com.github.sbridges</groupId>
     <artifactId>ephemeralfs</artifactId>
-    <version>1.0.0.1-SNAPSHOT</version>
+    <version>1.0.1.0</version>
     <name>ephemeralfs</name>
     <description>An in memory nio file system provider, primarily intended for testing.</description>
     <url>https://github.com/sbridges/ephemeralfs</url>

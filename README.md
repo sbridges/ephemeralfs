@@ -12,14 +12,14 @@ EphemeralFsFileSystemChecker allows asserting that all resources are closed, and
 Getting Started
 ===============
 
-EphemeralFs is available in maven as com.github.sbridges:ephemeralfs:1.0.0.0 :
+EphemeralFs is available in maven as com.github.sbridges:ephemeralfs:1.0.1.0 :
 
 
 ```xml
 	<dependency>
 	    <groupId>com.github.sbridges</groupId>
 	    <artifactId>ephemeralfs</artifactId>
-	    <version>1.0.0.0</version>
+	    <version>1.0.1.0</version>
 	</dependency>
 ```
 
